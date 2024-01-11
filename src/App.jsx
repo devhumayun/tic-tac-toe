@@ -1,31 +1,30 @@
 /* eslint-disable react/prop-types */
+
 import { useState } from "react";
 
 function Square({ value, handleSquareClick }) {
 
   return (
     <>
-      <button onClick={handleSquareClick} className="text-2xl w-20 h-20 border border-gray-300 p-1 leading-7 m-1 bg-white rounded-md"> {value} </button>
+      <button onClick={handleSquareClick} className="text-xl w-20 h-20 border border-gray-300 p-1 leading-7 m-1 bg-white rounded-md"> {value} </button>
     </>
   )
 }
 
 
-export default function Board() {
-  const [squares, setSquares] = useState(Array(9).fill(null))
-  const [isNext, setIsNext] = useState(true)
+function Board({ isNext, squares, onPlay }) {
 
   const winner = calculateWinner(squares)
   let status;
 
   if (winner) {
-    status = `Winner ${" "}: ${winner}`
+    status = <span className="text-xl text-white"> Winner: <strong>{winner}</strong> </span>
   } else {
-    status = "Next Player" + (isNext ? "X" : "O")
+    status = <span className="text-xl text-white"> Next Player : {isNext ? "X" : "O"} </span>
   }
 
   function handleChangeValue(i) {
-    if (squares[i]) {
+    if (squares[i] || calculateWinner(squares)) {
       return;
     }
     const nextSquares = squares.slice()
@@ -35,14 +34,14 @@ export default function Board() {
     } else {
       nextSquares[i] = "O"
     }
-    setIsNext(!isNext)
-    setSquares(nextSquares)
+
+    onPlay(nextSquares)
 
   }
   return (
     <>
-      <div>
-        <div> {status} </div>
+      <div className="bg-[#0a3d62] p-2 rounded-lg">
+        <div className="mb-4"> {status} </div>
         <div className="flex">
           <Square value={squares[0]} handleSquareClick={() => handleChangeValue(0)} />
           <Square value={squares[1]} handleSquareClick={() => handleChangeValue(1)} />
@@ -62,6 +61,58 @@ export default function Board() {
     </>
   )
 }
+
+
+export default function Game() {
+
+  const [history, setHistory] = useState([Array(9).fill(null)])
+  const [isNext, setIsNext] = useState(true)
+  const [currentMove, setCurrentMove] = useState(0)
+  const currentSquares = history[currentMove]
+
+  function handlePlay(nextSquares) {
+    setIsNext(!isNext)
+    const nextHistory = [...history.slice(0, currentMove + 1), nextSquares]
+    setHistory(nextHistory)
+    setCurrentMove(nextHistory.length - 1)
+  }
+
+  function jumpTo(move) {
+    setCurrentMove(move)
+    setIsNext(move % 2 === 0)
+  }
+
+  const moves = history.map((square, move) => {
+    let discription;
+    if (move > 0) {
+      discription = <span> Go to the move # {move} </span>
+    } else {
+      discription = <span className="text-white underline text-xl"> Start your move </span>
+    }
+
+    return (
+      <li key={move} className="mt-2 text-white">
+        <button onClick={() => jumpTo(move)}>{discription}</button>
+      </li>
+    )
+  })
+
+  return (
+    <>
+      <div className="w-screen h-[100vh] flex justify-center items-center gap-6 bg-[#e9e9e9]">
+        <div>
+          <Board isNext={isNext} squares={currentSquares} onPlay={handlePlay} />
+        </div>
+        <div className="bg-[#0a3d62] px-4 py-3 rounded-lg">
+          <ol>
+            {moves}
+          </ol>
+        </div>
+      </div>
+    </>
+  )
+}
+
 
 function calculateWinner(squares) {
   const lines = [
